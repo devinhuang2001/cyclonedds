@@ -303,6 +303,41 @@ static void teardown (struct ddsi_domaingv *gv)
   }
 }
 
+CU_Test (ddsi_plist, type_information_zero_length)
+{
+  struct ddsi_domaingv gv;
+  setup (&gv, 0);
+  ddsi_plist_init_tables ();
+  const uint16_t encodings[] = { DDSI_RTPS_PL_CDR_LE, DDSI_RTPS_PL_CDR_BE };
+  for (size_t i = 0; i < sizeof (encodings) / sizeof (encodings[0]); i++)
+  {
+    const ddsi_parameter_t data[] = {
+      { encodings[i] == DDSI_RTPS_PL_CDR_LE ? ddsrt_toLE2u (DDSI_PID_TYPE_INFORMATION) : ddsrt_toBE2u (DDSI_PID_TYPE_INFORMATION), 0 },
+      { encodings[i] == DDSI_RTPS_PL_CDR_LE ? ddsrt_toLE2u (DDSI_PID_SENTINEL) : ddsrt_toBE2u (DDSI_PID_SENTINEL), 0 }
+    };
+    const ddsi_plist_src_t src = {
+      .protocol_version = gv.config.protocol_version,
+      .vendorid = DDSI_VENDORID_ECLIPSE,
+      .encoding = encodings[i],
+      .buf = (const unsigned char *) data,
+      .bufsz = sizeof (data),
+      .strict = false
+    };
+    char *nextafter = NULL;
+    ddsi_plist_t plist;
+    dds_return_t rc = ddsi_plist_init_frommsg (&plist, &nextafter, ~(uint64_t)0, ~(uint64_t)0, &src, &gv, DDSI_PLIST_CONTEXT_PARTICIPANT);
+#ifdef DDS_HAS_TYPELIB
+    CU_ASSERT_EQ (rc, DDS_RETCODE_BAD_PARAMETER);
+    CU_ASSERT_EQ (nextafter, NULL);
+#else
+    CU_ASSERT_EQ (rc, DDS_RETCODE_OK);
+    CU_ASSERT_EQ (nextafter, (char *) data + sizeof (data));
+    ddsi_plist_fini (&plist);
+#endif
+  }
+  teardown (&gv);
+}
+
 CU_Test (ddsi_plist, locator_lists_reject)
 {
   static const uint32_t enabled_kinds[] = {
