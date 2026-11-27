@@ -13,6 +13,6 @@ jobs:
       - uses: actions/checkout@v4
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq libssl-dev
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DENABLE_SSL=ON -DSANITIZER=undefined
-      - run: cmake --build build -j $(nproc) 2>&1 | tail -40
-      - run: ctest --test-dir build -j 4 --output-on-failure --timeout 300 -R 'cdrstream|serdata|psmx|trailing_octets' 2>&1 | tail -40
+      - run: cmake --build build -j $(nproc)
+      - run: ctest --test-dir build -j 4 --output-on-failure --timeout 300 -R 'cdrstream|serdata|psmx|trailing_octets'
 

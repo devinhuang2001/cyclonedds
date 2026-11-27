@@ -203,6 +203,7 @@ target_link_libraries(cunit_ddsc PRIVATE
   CdrStreamDataTypeInfo
   CdrStreamChecking
   CdrStreamString
+  TrailingOctets
   CdrStreamParamHeader
   CdrStreamSerDes
   CdrStreamXcdr1Opt
