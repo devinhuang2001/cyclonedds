@@ -34,6 +34,12 @@ module CdrStreamParamHeader {
 };
 
 module CdrStreamAppendable {
+  @appendable
+  struct bounded_string {
+    long id;
+    string<24> name;
+  };
+
   @final
   struct f1 {
     long m1;
