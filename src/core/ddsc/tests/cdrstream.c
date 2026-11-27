@@ -4860,17 +4860,17 @@ CU_Test (ddsc_cdrstream, check_require_full_consumption_normalize)
     const uint8_t *cdr;
   } tests[] = {
     { "complete", XCDR1, true, true, true,
-      CDR(STR('o','c','k','g','k','n','z','e'), 32,3, 32,63, 32,64, 32,65) },
+      CDR(STR('o','c','k','g','k','n','z','e'), PAD3, 32,3, 32,63, 32,64, 32,65) },
     { "seq-len-zero-with-tail", XCDR1, true, false, false,
-      CDR(STR('o','c','k','g','k','n','z','e'), 32,0, 32,63, 32,64, 32,65) },
+      CDR(STR('o','c','k','g','k','n','z','e'), PAD3, 32,0, 32,63, 32,64, 32,65) },
     { "trailing-octets", XCDR1, true, false, false,
-      CDR(STR('o','c','k','g','k','n','z','e'), 32,3, 32,63, 32,64, 32,65, 32,0) },
+      CDR(STR('o','c','k','g','k','n','z','e'), PAD3, 32,3, 32,63, 32,64, 32,65, 32,0) },
     { "seq-truncated", XCDR1, false, false, false,
-      CDR(STR('o','c','k','g','k','n','z','e'), 32,3, 32,63) },
+      CDR(STR('o','c','k','g','k','n','z','e'), PAD3, 32,3, 32,63) },
     { "complete", XCDR2, true, true, true,
-      CDR(STR('o','c','k','g','k','n','z','e'), 32,3, 32,63, 32,64, 32,65) },
+      CDR(STR('o','c','k','g','k','n','z','e'), PAD3, 32,3, 32,63, 32,64, 32,65) },
     { "seq-len-zero-with-tail", XCDR2, true, false, false,
-      CDR(STR('o','c','k','g','k','n','z','e'), 32,0, 32,63, 32,64, 32,65) }
+      CDR(STR('o','c','k','g','k','n','z','e'), PAD3, 32,0, 32,63, 32,64, 32,65) }
   };
 
   for (uint32_t i = 0; i < sizeof (tests) / sizeof (tests[0]); i++)
