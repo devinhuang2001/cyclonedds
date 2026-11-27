@@ -6415,7 +6415,11 @@ enum dds_stream_normalize_result dds_stream_normalize_with_flags (void *data, ui
   {
     const uint32_t *tmp_ops = desc->ops.ops;
     *actual_size = 0;
-    return stream_normalize_data_impl (&st, actual_size, &tmp_ops, false);
+    const enum dds_stream_normalize_result res = stream_normalize_data_impl (&st, actual_size, &tmp_ops, false);
+    if (res == DDS_STREAM_NORMALIZE_SUCCESS &&
+        (flags & DDS_STREAM_NORMALIZE_FLAG_REQUIRE_FULL_CONSUMPTION) && *actual_size != size)
+      return normalize_error ();
+    return res;
   }
   else
   {
@@ -6424,6 +6428,8 @@ enum dds_stream_normalize_result dds_stream_normalize_with_flags (void *data, ui
     switch (stream_normalize_key (&st, desc, actual_size))
     {
       case DDS_STREAM_NORMALIZE_SUCCESS:
+        if ((flags & DDS_STREAM_NORMALIZE_FLAG_REQUIRE_FULL_CONSUMPTION) && *actual_size != size)
+          return normalize_error ();
         return DDS_STREAM_NORMALIZE_SUCCESS;
       case DDS_STREAM_NORMALIZE_DISCARD:
       case DDS_STREAM_NORMALIZE_ERROR:
