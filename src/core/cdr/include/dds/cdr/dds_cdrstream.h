@@ -113,7 +113,11 @@ enum dds_stream_normalize_result {
  */
 enum dds_stream_normalize_flags {
   DDS_STREAM_NORMALIZE_FLAG_NONE = 0u,
-  DDS_STREAM_NORMALIZE_FLAG_PREVENT_TYPE_WIDENING = 1u << 0
+  DDS_STREAM_NORMALIZE_FLAG_PREVENT_TYPE_WIDENING = 1u << 0,
+  /** Require the top-level normalized extent to equal the supplied size. The
+   * caller must exclude encapsulation padding and know that this is appropriate
+   * for the type. Delimited unknown members can still be consumed normally. */
+  DDS_STREAM_NORMALIZE_FLAG_REQUIRE_FULL_CONSUMPTION = 1u << 1
 };
 
 typedef struct dds_istream {
