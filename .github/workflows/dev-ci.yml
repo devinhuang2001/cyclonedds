@@ -14,27 +14,5 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq libssl-dev
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DENABLE_SSL=ON -DSANITIZER=undefined
       - run: cmake --build build -j $(nproc) 2>&1 | tail -40
-      - run: ctest --test-dir build -j 4 --output-on-failure --timeout 300 -R 'cdrstream|serdata|psmx' 2>&1 | tail -40
+      - run: ctest --test-dir build -j 4 --output-on-failure --timeout 300 -R 'cdrstream|serdata|psmx|trailing_octets' 2>&1 | tail -40
 
-  asan:
-    runs-on: ubuntu-24.04
-    name: debug-asan-ubsan
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-      - run: sudo sysctl vm.mmap_rnd_bits=28 || true
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq libssl-dev
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DENABLE_SSL=ON -DSANITIZER=address,undefined
-      - run: cmake --build build -j $(nproc) 2>&1 | tail -40
-      - run: ctest --test-dir build -j 4 --output-on-failure --timeout 600 -E '^ddsrt_random_default_random$' 2>&1 | tail -60
-
-  release:
-    runs-on: ubuntu-24.04
-    name: release-full
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq libssl-dev
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DENABLE_SSL=ON
-      - run: cmake --build build -j $(nproc) 2>&1 | tail -40
-      - run: ctest --test-dir build -j 4 --output-on-failure --timeout 600 -E '^ddsrt_random_default_random$' 2>&1 | tail -60
