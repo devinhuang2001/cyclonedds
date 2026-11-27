@@ -13,7 +13,7 @@
 
 #include "CUnit/Theory.h"
 #include "dds/dds.h"
-#include "dds/ddsrt/heap.h"
+#include "dds/ddsrt/string.h"
 #include "dds/ddsrt/time.h"
 
 #include "test_util.h"
@@ -84,20 +84,18 @@ static void endpoints_fini (struct endpoints *e)
 
 static void write_wide_sample (dds_entity_t wr)
 {
+  /* Stack-allocated sequence buffer: dds_write copies the sample, so there is
+     no owned memory to release afterwards. */
+  int32_t values[3] = { 63, 64, 65 };
   TrailingOctets_wide sample;
   memset (&sample, 0, sizeof (sample));
   ddsrt_strlcpy (sample.name, "ockgknze", sizeof (sample.name));
   sample.values._maximum = 3;
   sample.values._length = 3;
-  sample.values._buffer = dds_alloc (3 * sizeof (*sample.values._buffer));
-  sample.values._release = true;
-  CU_ASSERT_NEQ_FATAL (sample.values._buffer, NULL);
-  sample.values._buffer[0] = 63;
-  sample.values._buffer[1] = 64;
-  sample.values._buffer[2] = 65;
+  sample.values._buffer = values;
+  sample.values._release = false;
   sample.extra = 66;
   CU_ASSERT_EQ_FATAL (dds_write (wr, &sample), DDS_RETCODE_OK);
-  TrailingOctets_wide_free (&sample, DDS_FREE_CONTENTS);
 }
 
 static uint32_t take_samples (dds_entity_t rd, dds_duration_t timeout)
