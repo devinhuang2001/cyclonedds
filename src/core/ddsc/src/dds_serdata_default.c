@@ -344,6 +344,27 @@ static bool gen_serdata_key_from_cdr (dds_istream_t *is, struct dds_serdata_defa
   return gen_serdata_key (type, kh, just_key ? GSKIK_CDRKEY : GSKIK_CDRSAMPLE, is);
 }
 
+/* Report a discrepancy, not a validation error: a reader may intentionally
+ * accept a prefix of the writer's type (including type-erased forwarding).
+ * The caller has already excluded encapsulation padding. */
+static void trace_cdr_trailing_octets (const struct ddsi_sertype *type, uint32_t payload_size, uint32_t actual_size)
+{
+  if (actual_size >= payload_size)
+    return;
+  // Derived sertypes may not themselves be registered with the domain.
+  const struct ddsi_domaingv *gv = ddsrt_atomic_ldvoidp (&type->gv);
+  while (gv == NULL && type->base_sertype != NULL)
+  {
+    type = type->base_sertype;
+    gv = ddsrt_atomic_ldvoidp (&type->gv);
+  }
+  if (gv != NULL)
+    DDS_CLOG (DDS_LC_TRACE, &gv->logconfig,
+              "CDR trailing octets: type %s, payload %u, normalized %u, extra %u\n",
+              type->type_name, (unsigned) payload_size, (unsigned) actual_size,
+              (unsigned) (payload_size - actual_size));
+}
+
 enum from_ser_result {
   FROM_SER_SUCCESS,
   FROM_SER_DISCARD,
@@ -410,6 +431,8 @@ static enum from_ser_result serdata_default_from_ser_common (const struct ddsi_s
   switch (nres)
   {
     case DDS_STREAM_NORMALIZE_SUCCESS:
+      if (kind == SDK_DATA)
+        trace_cdr_trailing_octets (tpcmn, d->pos - pad, actual_size);
       break;
     case DDS_STREAM_NORMALIZE_DISCARD:
       goto discard;
@@ -474,6 +497,8 @@ static enum from_ser_result serdata_default_from_ser_iov_common (const struct dd
   switch (nres)
   {
     case DDS_STREAM_NORMALIZE_SUCCESS:
+      if (kind == SDK_DATA)
+        trace_cdr_trailing_octets (tpcmn, d->pos - pad, actual_size);
       break;
     case DDS_STREAM_NORMALIZE_DISCARD:
       goto discard;
@@ -1033,6 +1058,8 @@ static struct ddsi_serdata * serdata_default_from_psmx (const struct ddsi_sertyp
       switch (nres)
       {
         case DDS_STREAM_NORMALIZE_SUCCESS:
+          if (!just_key)
+            trace_cdr_trailing_octets (type, md->sample_size - pad, actual_size);
           break;
         case DDS_STREAM_NORMALIZE_DISCARD:
           ddsi_serdata_unref (&d->c);
