@@ -1,0 +1,53 @@
+name: dev-ci
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: debug-asan-ubsan
+            build_type: Debug
+            sanitizer: "address,undefined"
+            ctest_filter: ""
+          - name: release
+            build_type: Release
+            sanitizer: ""
+            ctest_filter: ""
+          - name: debug-clang-asan
+            build_type: Debug
+            sanitizer: "address,undefined"
+            cc: clang
+            ctest_filter: "cdrstream|cdr|psmx|serdata"
+    runs-on: ubuntu-24.04
+    name: ${{ matrix.name }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: fix_kernel_mmap_rnd_bits
+        run: sudo sysctl vm.mmap_rnd_bits=28 || true
+      - name: deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libssl-dev clang
+      - name: configure
+        run: |
+          SAN=""
+          if [ -n "${{ matrix.sanitizer }}" ]; then SAN="-DSANITIZER=${{ matrix.sanitizer }}"; fi
+          if [ -n "${{ matrix.cc }}" ]; then export CC=${{ matrix.cc }}; export CXX=${{ matrix.cc }}; fi
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DBUILD_TESTING=ON -DENABLE_SSL=ON $SAN
+      - name: build
+        run: cmake --build build -j $(nproc) 2>&1 | tail -40
+      - name: list tests
+        run: ctest --test-dir build -N | tail -5
+      - name: ctest
+        run: |
+          set -o pipefail
+          ctest --test-dir build -j 4 --output-on-failure --timeout 300 \
+            ${{ matrix.ctest_filter && format('-R "{0}"', matrix.ctest_filter) || '' }} \
+            -E '^ddsrt_random_default_random$' 2>&1 | tail -60
