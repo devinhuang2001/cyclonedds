@@ -35,6 +35,11 @@ module CdrStreamParamHeader {
 
 module CdrStreamAppendable {
   @final
+  struct bounded_sequence {
+    sequence<long, 5> values;
+  };
+
+  @final
   struct f1 {
     long m1;
     long m2;
