@@ -4670,6 +4670,47 @@ static void run_test_xcdr2_normalize (const dds_topic_descriptor_t *tdesc, const
   run_test_normalize (tdesc, cdr, cdrsize, DDSI_RTPS_CDR_ENC_VERSION_2, valid, DDS_STREAM_NORMALIZE_FLAG_NONE, act_size);
 }
 
+CU_Test (ddsc_cdrstream, check_normalize_full_consumption)
+{
+  const uint32_t strict = DDS_STREAM_NORMALIZE_FLAG_REQUIRE_FULL_CONSUMPTION;
+  const dds_topic_descriptor_t *desc = &CdrStreamAppendable_bounded_sequence_desc;
+  const enum dds_cdr_enc_version versions[] = { XCDR1, XCDR2 };
+  const struct {
+    bool normal_valid;
+    bool strict_valid;
+    uint32_t expected_size;
+    uint32_t cdrsize;
+    const uint8_t *cdr;
+  } tests[] = {
+    { true, true, 4, CDR(32,0) },
+    { true, true, 12, CDR(32,2, 32,1, 32,2) },
+    { true, false, 4, CDR(32,0, 32,1) },
+    { false, false, 0, CDR(32,1) }
+  };
+  for (size_t v = 0; v < sizeof (versions) / sizeof (versions[0]); v++)
+  {
+    for (size_t i = 0; i < sizeof (tests) / sizeof (tests[0]); i++)
+    {
+      uint32_t actual_size = 0;
+      run_test_normalize (desc, tests[i].cdr, tests[i].cdrsize, versions[v],
+                          tests[i].normal_valid, DDS_STREAM_NORMALIZE_FLAG_NONE, &actual_size);
+      if (tests[i].normal_valid)
+        CU_ASSERT_EQ_FATAL (actual_size, tests[i].expected_size);
+      run_test_normalize (desc, tests[i].cdr, tests[i].cdrsize, versions[v],
+                          tests[i].strict_valid, strict, &actual_size);
+      if (tests[i].strict_valid)
+        CU_ASSERT_EQ_FATAL (actual_size, tests[i].cdrsize);
+    }
+  }
+  // Unknown appendable members inside a valid XCDR2 delimiter are still
+  // accounted for by normalization and must not be rejected by this flag.
+  const struct { uint32_t size; const uint8_t *cdr; } appendable = { CDR(DHDR(32,1, 32,2, 32,3)) };
+  uint32_t actual_size = 0;
+  run_test_normalize (&CdrStreamAppendable_a1_desc, appendable.cdr, appendable.size,
+                      XCDR2, true, strict, &actual_size);
+  CU_ASSERT_EQ_FATAL (actual_size, appendable.size);
+}
+
 #define D(n) (&CdrStreamParamHeader_ ## n ## _desc)
 CU_Test (ddsc_cdrstream, check_xcdr1_param_normalize)
 {
